@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudNet Sentinel - Automated Security Remediation Infrastructure (API Gateway + Lambda + SNS + Least-Privilege IAM)'
+
+Parameters:
+  AlertEmailAddress:
+    Type: String
+    Default: ''
+    Description: 'Email address to receive security alert emails with the Secure Now CTA (optional)'
+  RemediationSigningSecret:
+    Type: String
+    NoEcho: true
+    Default: 'cloudnet-sentinel-default-remediation-secret-2026'
+    Description: 'Shared HMAC-SHA256 secret for validating remediation tokens'
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmailAddress, '']]
+
+Resources:
+  # 1. Least-Privilege IAM Execution Role for Remediation Lambda
+  SentinelRemediationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CloudNetSentinelRemediationRole
+      Description: 'Least-privilege role for CloudNet Sentinel automated security group ingress remediation'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SentinelEC2RemediationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: DescribeSecurityGroups
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSecurityGroups
+                Resource: '*'
+              - Sid: RevokeIngressRuleOnly
+                Effect: Allow
+                Action:
+                  - ec2:RevokeSecurityGroupIngress
+                Resource: '*'
+              - Sid: CloudWatchAuditLogging
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/CloudNetSentinelRemediation:*'
+              - Sid: SNSPublishConfirmation
+                Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref SentinelAlertsTopic
+
+  # 2. Remediation Lambda Function
+  SentinelRemediationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: CloudNetSentinelRemediation
+      Description: 'Validates Secure Now remediation tokens and revokes vulnerable security group ingress rules'
+      Runtime: python3.11
+      Handler: lambda_function.lambda_handler
+      Timeout: 15
+      MemorySize: 128
+      Role: !GetAtt SentinelRemediationExecutionRole.Arn
+      Environment:
+        Variables:
+          REMEDIATION_SIGNING_SECRET: !Ref RemediationSigningSecret
+      Code:
+        ZipFile: |
+          # Placeholder code - deploy actual code using remediation/deploy.py or aws lambda update-function-code
+          def lambda_handler(event, context):
+              import lambda_function
+              return lambda_function.lambda_handler(event, context)
+
+  # 3. Amazon API Gateway HTTP API (v2)
+  SentinelHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: CloudNetSentinelRemediationAPI
+      Description: 'API Gateway endpoint for CloudNet Sentinel Secure Now automated remediation'
+      ProtocolType: HTTP
+
+  SentinelApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref SentinelHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt SentinelRemediationFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  SentinelApiRouteSecure:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref SentinelHttpApi
+      RouteKey: 'ANY /secure'
+      Target: !Join ['/', ['integrations', !Ref SentinelApiIntegration]]
+
+  SentinelApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref SentinelHttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  SentinelLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SentinelRemediationFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SentinelHttpApi}/*'
+
+  # 4. Amazon SNS Topic for Security Alerts
+  SentinelAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: CloudNetSentinelAlerts
+      DisplayName: 'CloudNet Sentinel Security Alerts'
+
+  SentinelEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties:
+      TopicArn: !Ref SentinelAlertsTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmailAddress
+
+Outputs:
+  SecureNowEndpoint:
+    Description: 'Base URL for the Secure Now remediation endpoint'
+    Value: !Sub '${SentinelHttpApi.ApiEndpoint}/secure'
+  ApiGatewayUrl:
+    Description: 'API Gateway Base URL to set as API_GATEWAY_URL'
+    Value: !GetAtt SentinelHttpApi.ApiEndpoint
+  SnsTopicArn:
+    Description: 'SNS Topic ARN to set as SNS_TOPIC_ARN'
+    Value: !Ref SentinelAlertsTopic
+  LambdaFunctionArn:
+    Description: 'Remediation Lambda ARN'
+    Value: !GetAtt SentinelRemediationFunction.Arn
+  ExecutionRoleArn:
+    Description: 'Least-Privilege Lambda Execution Role ARN'
+    Value: !GetAtt SentinelRemediationExecutionRole.Arn

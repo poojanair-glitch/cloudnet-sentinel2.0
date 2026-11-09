@@ -1,13 +1,26 @@
 import networkx as nx
 
 class AttackPathEngine:
-    @staticmethod
-    def find_attack_paths(graph_obj):
+    def __init__(self, graph_obj=None):
+        self.graph_obj = graph_obj
+
+    def find_attack_paths(self, graph_obj=None):
         """
         Detects multi-step attack paths starting from 'Internet'.
-        Expects the graph output from GraphEngine.
+        Expects the graph output from GraphEngine or nx.DiGraph.
         """
-        G = graph_obj.get("graph")
+        target = graph_obj if graph_obj is not None else self.graph_obj
+        if target is None:
+            target = {}
+        elif isinstance(target, nx.DiGraph):
+            target = {
+                "graph": target,
+                "entry_points": [n for n, d in target.nodes(data=True) if d.get("public")],
+                "privileged_nodes": [n for n, d in target.nodes(data=True) if d.get("is_admin")]
+            }
+
+        G = target.get("graph")
+
         if not G or "Internet" not in G:
             return {
                 "paths": [],

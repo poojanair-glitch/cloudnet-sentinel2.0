@@ -269,13 +269,27 @@
 <body>
     <header>
         <div class="logo"><i class="bi bi-shield-lock-fill"></i> CloudNet Sentinel</div>
-        <div style="display: flex; align-items: center; gap: 1.5rem;">
-            <div id="scan-status" style="font-size: 0.65rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
-                <span style="color: var(--success);">●</span> SECURE CHANNEL ACTIVE
+        <div style="display: flex; align-items: center; gap: 1.2rem;">
+            <!-- Real AWS Account Indicator -->
+            <div style="font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 5px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px;">
+                <span style="color: #10b981;"><i class="bi bi-check-circle-fill"></i> LIVE AWS ACCOUNT:</span>
+                <span style="color: #fff; font-weight: 700;">{{ intelligence.account_id }}</span>
+                <span style="color: rgba(255,255,255,0.2);">|</span>
+                <span style="color: var(--accent-blue);">{{ intelligence.iam_user }}</span>
             </div>
+
+            <!-- AWS Region Switcher -->
+            <div style="font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;">
+                <span style="color: var(--text-secondary);"><i class="bi bi-geo-alt"></i> Region:</span>
+                <a href="/dashboard?region=us-east-1" style="color: {{ '#38bdf8' if intelligence.region == 'us-east-1' else 'var(--text-secondary)' }}; font-weight: 700; text-decoration: none;">us-east-1 (Active)</a>
+                <span style="color: var(--border);">|</span>
+                <a href="/dashboard?region=ap-south-1" style="color: {{ '#38bdf8' if intelligence.region == 'ap-south-1' else 'var(--text-secondary)' }}; font-weight: 700; text-decoration: none;">ap-south-1</a>
+            </div>
+            
             <a href="/logout" style="color: var(--text-secondary); text-decoration: none; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;"><i class="bi bi-power"></i> Logout</a>
         </div>
     </header>
+
 
     <div class="tab-bar">
         <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
@@ -459,9 +473,106 @@
         <!-- TAB 3: ACTION & PRIORITIZATION -->
         <div id="actions-page" class="tab-content">
             <div style="max-width: 900px; margin: 0 auto;">
-                <div class="section-title" style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 0.5rem; text-transform: none;">REMEDIATION PLAYBOOK</div>
-                <p style="color: var(--text-secondary); margin-bottom: 2.5rem; font-size: 0.9rem;">Ranked by multi-hop traversal feasibility and potential financial blast radius.</p>
-                
+                <div class="section-title" style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 0.5rem; text-transform: none;">AUTOMATED REMEDIATION & FINDINGS</div>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9rem;">Exposed ingress ports identified by CloudNet Sentinel with cryptographically signed one-click remediation.</p>
+
+                <!-- Section: Live Amazon SNS Alert Center -->
+                <div class="card" style="background: rgba(37,99,235,0.06); border: 1px solid rgba(59,130,246,0.3); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fff; font-size: 1rem;">
+                                <i class="bi bi-broadcast" style="color: var(--accent-blue);"></i> Amazon SNS Live Security Alert Dispatcher
+                            </div>
+                            <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-secondary);">
+                                Real SNS Topic: <code style="color: var(--accent-blue);">arn:aws:sns:us-east-1:826917685155:CloudNetSentinelAlerts</code> &bull; AWS Account: <strong style="color: #fff;">{{ intelligence.account_id }}</strong>
+                            </p>
+                        </div>
+                        <button onclick="checkSnsStatus()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-secondary); padding: 5px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-arrow-clockwise"></i> Check Subscribers
+                        </button>
+                    </div>
+
+                    <!-- Subscriber count & details -->
+                    <div id="sns-subscribers-list" style="margin-bottom: 1rem; font-size: 0.78rem; display: none; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);"></div>
+
+                    <!-- Subscribe & Send Form -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="email" id="sns-email-input" placeholder="Enter your real email address (e.g. yourname@gmail.com)" style="flex: 1; min-width: 280px; background: rgba(0,0,0,0.45); border: 1px solid var(--border); color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; font-family: inherit;">
+                        <button id="sns-dispatch-btn" onclick="dispatchSnsEmail()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none; color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+                            <i class="bi bi-envelope-check-fill"></i> Subscribe & Dispatch Real Alert
+                        </button>
+                    </div>
+
+                    <!-- Status feedback container -->
+                    <div id="sns-feedback-box" style="display: none; margin-top: 12px; padding: 12px 16px; border-radius: 6px; font-size: 0.82rem; line-height: 1.5;"></div>
+                </div>
+
+                <!-- Section: Granular Secure Now Findings -->
+                {% if intelligence.findings %}
+                <div style="margin-bottom: 2.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <h4 style="color:var(--accent-blue); font-size:0.95rem; text-transform:uppercase; letter-spacing:1px; margin:0;"><i class="bi bi-shield-lock-fill"></i> Live AWS Insecure Ingress Rules ({{ intelligence.findings|length }})</h4>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="secureAllOpenPorts(this)" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color:#fff; border:none; padding:8px 18px; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+                                <i class="bi bi-shield-fill-check"></i> SECURE ALL OPEN PORTS NOW
+                            </button>
+                            <button onclick="dispatchSnsEmail()" style="background:rgba(255,255,255,0.06); border:1px solid var(--border); color:#fff; padding:8px 14px; border-radius:5px; font-size:0.82rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                                <i class="bi bi-envelope-fill"></i> Send SNS Alert
+                            </button>
+                        </div>
+                    </div>
+
+                    {% for f in intelligence.findings %}
+                    <div class="card action-card priority-{{ f.severity }}" style="margin-bottom: 1.2rem; border-left: 4px solid {{ 'var(--danger)' if f.severity in ['CRITICAL', 'HIGH'] else 'var(--warning)' }};">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+                            <div>
+                                <span class="badge {{ 'badge-high' if f.severity in ['CRITICAL', 'HIGH'] else 'badge-med' }}">{{ f.severity }} &bull; Score: {{ f.risk_score }}/100</span>
+                                <h3 style="margin: 8px 0 0 0; font-size: 1.1rem; font-family:'JetBrains Mono';">{{ f.resource_id }} <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:normal;">({{ f.resource_type }})</span></h3>
+                            </div>
+                            <span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:3px;">{{ f.finding_id }}</span>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:1rem; font-size:0.8rem;">
+                            <div><span style="color:var(--text-secondary);">Security Group:</span> <strong>{{ f.security_group_name }}</strong> (<code>{{ f.security_group_id }}</code>)</div>
+                            <div><span style="color:var(--text-secondary);">Exposed Port:</span> <strong style="color:var(--danger);">{{ f.port_display }} ({{ f.protocol|upper }}) - {{ f.service_name }}</strong></div>
+                            <div><span style="color:var(--text-secondary);">Source CIDR:</span> <code>{{ f.source_cidr }}</code> (Internet Accessible)</div>
+                            <div><span style="color:var(--text-secondary);">Target Action:</span> <code>ec2:RevokeSecurityGroupIngress</code></div>
+                        </div>
+
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.2rem; line-height:1.5;"><strong>RISK:</strong> {{ f.description }}</p>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 0.8rem 1rem; border-radius: 4px;">
+                            <div style="font-size: 0.8rem; color:var(--text-primary);"><i class="bi bi-info-circle" style="color:var(--accent-blue);"></i> {{ f.recommended_action }}</div>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="sendAlertSingle('{{ f.finding_id }}', this)" style="background:transparent; border:1px solid var(--border); color:var(--text-primary); padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;" title="Send SNS Email"><i class="bi bi-send"></i> Email Alert</button>
+                                <a href="{{ f.secure_url }}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#2563eb; color:#fff; text-decoration:none; padding:6px 16px; border-radius:4px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 6px rgba(37,99,235,0.4);"><i class="bi bi-shield-check"></i> SECURE NOW</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- Hardened Region Notice + us-east-1 switcher -->
+                <div class="card" style="padding: 1.5rem; margin-bottom: 2rem; border-left: 4px solid var(--success); background: rgba(56, 161, 105, 0.05); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--success); font-size: 0.95rem; margin-bottom: 4px; display:flex; align-items:center; gap:8px;">
+                            <i class="bi bi-shield-check" style="font-size:1.2rem;"></i> 0 Insecure Ingress Rules in {{ intelligence.region }}
+                        </div>
+                        <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">
+                            Security groups in region <code>{{ intelligence.region }}</code> are hardened. Your real AWS account has 5 open insecure ingress rules in <strong>us-east-1</strong> (N. Virginia).
+                        </p>
+                    </div>
+                    <a href="/dashboard?region=us-east-1" style="display: inline-flex; align-items: center; gap: 6px; background: #2563eb; color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 5px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 8px rgba(37,99,235,0.3);">
+                        <i class="bi bi-arrow-right-circle-fill"></i> Switch to us-east-1 (5 Rules)
+                    </a>
+                </div>
+                {% endif %}
+
+
+                <!-- Section: Structural Fix Recommendations -->
+                <div class="section-title" style="font-size: 1rem; color: var(--text-primary); margin-bottom: 0.5rem; text-transform: uppercase;">Structural Attack Path Fixes</div>
                 {% for fix in intelligence.explanations.top_fixes %}
                 <div class="card action-card priority-{{ fix.priority }}">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
@@ -479,7 +590,7 @@
                 </div>
                 {% endfor %}
                 
-                {% if not intelligence.explanations.top_fixes %}
+                {% if not intelligence.explanations.top_fixes and not intelligence.findings %}
                 <div class="card" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
                     <i class="bi bi-shield-check" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem; display: block;"></i>
                     <p>No critical remediation steps required. System is currently hardened.</p>
@@ -879,10 +990,169 @@
                 });
         }
 
+        function secureAllOpenPorts(btn) {
+            if (!confirm("Are you sure you want to revoke and close all exposed ingress ports (0.0.0.0/0 and ::/0) on your live AWS account? This action safely removes only insecure rules from your AWS Security Groups.")) {
+                return;
+            }
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Revoking Rules on AWS...';
+
+            fetch('/api/secure-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'SUCCESS') {
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ALL OPEN PORTS SECURED!';
+                    let msg = "Successfully closed and secured " + data.results.length + " open ingress rule(s) on your real AWS security groups!\n\n";
+                    data.results.forEach(r => {
+                        msg += "• " + (r.security_group_name || r.security_group_id) + " : Port " + (r.port || 'ALL') + " (" + r.status + ")\n";
+                    });
+                    alert(msg);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Failed to secure rules: ' + (data.error || 'Unknown error'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert('Request failed: ' + err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+
+        function checkSnsStatus() {
+            const listDiv = document.getElementById('sns-subscribers-list');
+            if (!listDiv) return;
+            listDiv.style.display = 'block';
+            listDiv.innerHTML = '<span style="color:var(--text-secondary);"><i class="bi bi-hourglass-split"></i> Querying AWS SNS topic subscriptions...</span>';
+            fetch('/api/sns/status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.subscriptions && data.subscriptions.length > 0) {
+                        let html = '<div style="font-weight:700; color:#fff; margin-bottom:6px;"><i class="bi bi-people-fill"></i> Current Amazon SNS Topic Subscribers (' + data.subscriptions.length + '):</div><div style="display:flex; flex-direction:column; gap:4px;">';
+                        data.subscriptions.forEach(s => {
+                            const badge = s.confirmed 
+                                ? '<span style="color:#10b981; font-weight:700;">[ CONFIRMED ]</span>' 
+                                : '<span style="color:#f59e0b; font-weight:700;">[ PENDING CONFIRMATION - Check Email Inbox ]</span>';
+                            html += '<div>&bull; <code style="color:#fff;">' + s.endpoint + '</code> ' + badge + '</div>';
+                        });
+                        html += '</div>';
+                        listDiv.innerHTML = html;
+                    } else {
+                        listDiv.innerHTML = '<span style="color:var(--text-secondary);"><i class="bi bi-info-circle"></i> No subscribers currently registered on this AWS SNS topic. Enter your email below to subscribe!</span>';
+                    }
+                })
+                .catch(err => {
+                    listDiv.innerHTML = '<span style="color:var(--danger);"><i class="bi bi-exclamation-triangle"></i> Note: ' + err + '</span>';
+                });
+        }
+
+        function dispatchSnsEmail() {
+            const emailInput = document.getElementById('sns-email-input');
+            const email = emailInput ? emailInput.value.trim() : '';
+            if (!email) {
+                alert('Please enter your real email address to receive the AWS SNS security alert.');
+                if (emailInput) emailInput.focus();
+                return;
+            }
+
+            const btn = document.getElementById('sns-dispatch-btn');
+            const feedback = document.getElementById('sns-feedback-box');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Publishing to AWS SNS...';
+            }
+
+            fetch('/api/send-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+                if (data.status === 'SUCCESS') {
+                    if (feedback) {
+                        feedback.style.display = 'block';
+                        feedback.style.background = 'rgba(16, 185, 129, 0.12)';
+                        feedback.style.border = '1px solid #10b981';
+                        feedback.style.color = '#fff';
+                        feedback.innerHTML = `
+                            <div style="font-weight:700; color:#10b981; margin-bottom:4px;"><i class="bi bi-check-circle-fill"></i> Real AWS SNS Alerts Dispatched to ${email}!</div>
+                            <div><strong>Important Next Step:</strong> If this is your first time subscribing, AWS has just sent you a verification email with the subject <em>"AWS Notification - Subscription Confirmation"</em>.</div>
+                            <div style="margin-top:6px; color:var(--text-secondary);">Open that email from <code>no-reply@sns.amazonaws.com</code> and click <strong>"Confirm subscription"</strong>. Once confirmed, all security alerts and <strong>[ SECURE NOW ]</strong> remediation links will be delivered directly to your inbox.</div>
+                        `;
+                    }
+                    alert("Real AWS SNS Alerts dispatched to " + email + "!\n\nPlease check your email inbox to confirm the AWS SNS subscription.");
+                    checkSnsStatus();
+                } else {
+                    alert('Failed to dispatch alerts: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+                alert('Request failed: ' + err);
+            });
+        }
+
+        function sendAlertSingle(findingId, btn) {
+            const emailInput = document.getElementById('sns-email-input');
+            let email = emailInput ? emailInput.value.trim() : '';
+            if (!email) {
+                email = prompt("Enter the email address where you want to receive this real AWS security alert via Amazon SNS:");
+                if (!email) return;
+                if (emailInput) emailInput.value = email;
+            }
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Dispatching...';
+            fetch('/api/send-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ finding_id: findingId, email: email })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'SUCCESS') {
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill" style="color:var(--success)"></i> Alert Sent!';
+                    alert("Real AWS SNS alert for finding " + findingId + " sent to " + email + "!\n\nPlease check your email inbox (and click 'Confirm subscription' if this is your first time).");
+                    setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 4000);
+                    checkSnsStatus();
+                } else {
+                    alert('Failed to send alert: ' + (data.error || 'Unknown error'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert('Request failed: ' + err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+
+
         document.addEventListener('DOMContentLoaded', () => {
             setInterval(pollEvents, 3000);
             pollEvents();
+            checkSnsStatus();
         });
     </script>
 </body>
 </html>
+

@@ -84,7 +84,7 @@ class AssetIntelligenceEngine:
                 "exposure_status": "internal",
                 "risk_level": "LOW",
                 "attack_role": "STRUCTURAL",
-                "connected_nodes": [s['SubnetId'] for s in scan_results.get('subnets', []) if s['VpcId'] == asset_id],
+                "connected_nodes": [s.get('SubnetId') for s in scan_results.get('subnets', []) if s.get('VpcId') and s.get('VpcId') == asset_id],
                 "vulnerabilities": [],
                 "recommended_fix": "Monitor for unauthorized peering or IGW attachments.",
                 "blast_radius_score": 20

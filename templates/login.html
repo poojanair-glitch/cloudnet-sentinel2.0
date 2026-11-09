@@ -249,12 +249,30 @@
             <p class="subtitle">Cloud Attack Path Intelligence Platform</p>
         </div>
 
+        <!-- 1-Click Real AWS Connection Button -->
+        <form action="/connect-real-aws" method="POST" style="margin-bottom: 24px;">
+            <input type="hidden" name="region" value="us-east-1">
+            <button type="submit" class="btn-scan" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.35);">
+                <i class="bi bi-shield-check" style="font-size: 1.1rem;"></i>
+                <span>Connect Live AWS (826917685155)</span>
+            </button>
+            <div style="text-align: center; margin-top: 8px; font-size: 0.72rem; color: #10b981; font-family: 'JetBrains Mono', monospace;">
+                <i class="bi bi-check-circle-fill"></i> User: cloudnet-user | Region: us-east-1
+            </div>
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--text-dim); font-size: 0.72rem; letter-spacing: 0.5px;">
+            <div style="flex-grow: 1; height: 1px; background: var(--glass-border);"></div>
+            <span>OR ENTER IAM KEYS MANUALLY</span>
+            <div style="flex-grow: 1; height: 1px; background: var(--glass-border);"></div>
+        </div>
+
         <form id="scanForm" action="/login" method="POST">
             <div class="form-group">
                 <label class="label">Access Key</label>
                 <div class="input-wrapper">
                     <i class="bi bi-key"></i>
-                    <input type="text" id="access_key" name="access_key" placeholder="Enter AWS Access Key" required>
+                    <input type="text" id="access_key" name="access_key" placeholder="AKIA... (Optional if using active AWS)">
                 </div>
             </div>
 
@@ -262,7 +280,7 @@
                 <label class="label">Secret Key</label>
                 <div class="input-wrapper">
                     <i class="bi bi-lock"></i>
-                    <input type="password" id="secret_key" name="secret_key" placeholder="••••••••••••••••" required>
+                    <input type="password" id="secret_key" name="secret_key" placeholder="•••••••••••••••• (Optional)">
                 </div>
                 <div class="iam-warning">
                     <i class="bi bi-exclamation-triangle-fill"></i>
@@ -275,9 +293,9 @@
                 <div class="input-wrapper">
                     <i class="bi bi-geo-alt"></i>
                     <select id="region" name="region">
-                        <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                        <option value="us-east-1" selected>us-east-1 (N. Virginia) [Active Account]</option>
                         <option value="us-west-2">us-west-2 (Oregon)</option>
-                        <option value="ap-south-1" selected>ap-south-1 (Mumbai)</option>
+                        <option value="ap-south-1">ap-south-1 (Mumbai)</option>
                         <option value="eu-central-1">eu-central-1 (Frankfurt)</option>
                         <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
                     </select>
@@ -285,7 +303,7 @@
             </div>
 
             <button type="submit" class="btn-scan" id="submitBtn">
-                <span id="btnText">🚀 Run Scan</span>
+                <span id="btnText">🚀 Scan Real AWS Infrastructure</span>
                 <div class="loader" id="loader"></div>
             </button>
         </form>
