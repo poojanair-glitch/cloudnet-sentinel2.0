@@ -122,8 +122,10 @@ Configure the following environment variables in your terminal, `.env` file, or 
 | `AWS_SECRET_ACCESS_KEY` | AWS IAM Secret Access Key | Yes (for AWS access) | |
 | `AWS_REGION` | Target AWS Region | Optional | `us-east-1` |
 | `REMEDIATION_SIGNING_SECRET` | Shared secret for HMAC-SHA256 token signing and verification | Recommended in prod | Built-in fallback secret |
-| `API_GATEWAY_URL` | Base URL of deployed API Gateway | For AWS alerts | `https://api.cloudnet-sentinel.local/prod` |
+| `API_GATEWAY_URL` | Base URL of the deployed API Gateway used in alert email links | For AWS alerts | `https://{api-id}.execute-api.{region}.amazonaws.com/prod` |
 | `SNS_TOPIC_ARN` | ARN of the SNS alert topic | For email delivery | Optional (logs preview if unset) |
+
+The dashboard's **Secure Now** button calls the local Flask `/secure` endpoint. Set `API_GATEWAY_URL` to the deployed API Gateway URL if alert emails should work outside the running dashboard.
 
 ---
 

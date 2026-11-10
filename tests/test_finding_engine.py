@@ -107,6 +107,7 @@ class TestFindingEngine(unittest.TestCase):
         self.assertGreaterEqual(f["risk_score"], 85)
         self.assertIn("secure?", f["secure_url"])
         self.assertIn("token=", f["secure_url"])
+        self.assertIn(f["secure_token"], f["secure_url"])
         self.assertIn("Revoke ingress rule", f["recommended_action"])
         self.assertEqual(f["remediation_payload"]["action"], "revoke_security_group_ingress")
 

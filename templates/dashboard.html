@@ -285,7 +285,9 @@
                 <span style="color: var(--border);">|</span>
                 <a href="/dashboard?region=ap-south-1" style="color: {{ '#38bdf8' if intelligence.region == 'ap-south-1' else 'var(--text-secondary)' }}; font-weight: 700; text-decoration: none;">ap-south-1</a>
             </div>
-            
+
+            <a href="{{ url_for('dashboard', region=intelligence.region) }}" title="Refresh dashboard and rescan AWS" style="display: inline-flex; align-items: center; gap: 6px; color: var(--text-primary); text-decoration: none; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;"><i class="bi bi-arrow-clockwise"></i> Refresh</a>
+
             <a href="/logout" style="color: var(--text-secondary); text-decoration: none; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;"><i class="bi bi-power"></i> Logout</a>
         </div>
     </header>
@@ -547,7 +549,7 @@
                             <div style="font-size: 0.8rem; color:var(--text-primary);"><i class="bi bi-info-circle" style="color:var(--accent-blue);"></i> {{ f.recommended_action }}</div>
                             <div style="display:flex; gap:8px;">
                                 <button onclick="sendAlertSingle('{{ f.finding_id }}', this)" style="background:transparent; border:1px solid var(--border); color:var(--text-primary); padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;" title="Send SNS Email"><i class="bi bi-send"></i> Email Alert</button>
-                                <a href="{{ f.secure_url }}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#2563eb; color:#fff; text-decoration:none; padding:6px 16px; border-radius:4px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 6px rgba(37,99,235,0.4);"><i class="bi bi-shield-check"></i> SECURE NOW</a>
+                                <a href="{{ url_for('secure_endpoint', finding_id=f.finding_id, token=f.secure_token) }}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#2563eb; color:#fff; text-decoration:none; padding:6px 16px; border-radius:4px; font-size:0.8rem; font-weight:700; box-shadow:0 2px 6px rgba(37,99,235,0.4);"><i class="bi bi-shield-check"></i> SECURE NOW</a>
                             </div>
                         </div>
                     </div>
@@ -1155,4 +1157,3 @@
     </script>
 </body>
 </html>
-
